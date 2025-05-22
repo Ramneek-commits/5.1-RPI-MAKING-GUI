@@ -1,43 +1,38 @@
 import tkinter as tk
 import RPi.GPIO as GPIO
 
-# Use physical pin numbering
-GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BCM)
 
-# Define LED physical pins
-LED_PINS = {
-    "Red": 11,
-    "Green": 13,
-    "Blue": 15
-}
+PINS = {"Red": 17, "Green": 27, "Blue": 22}
+STATES = {k: False for k in PINS}
 
-# Setup all pins
-for pin in LED_PINS.values():
-    GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, GPIO.LOW)
+for p in PINS.values():
+    GPIO.setup(p, GPIO.OUT)
+    GPIO.output(p, GPIO.LOW)
 
-# Turn on selected LED
-def turn_on_led():
-    selected = color_var.get()
-    for color, pin in LED_PINS.items():
-        GPIO.output(pin, color == selected)
+def toggle(c):
+    STATES[c] = not STATES[c]
+    GPIO.output(PINS[c], GPIO.HIGH if STATES[c] else GPIO.LOW)
+    B[c].config(text=f"{c} {'ON' if STATES[c] else 'OFF'}")
 
-# Exit GUI and clean GPIO
-def exit_program():
+def shutdown():
+    for p in PINS.values():
+        GPIO.output(p, GPIO.LOW)
     GPIO.cleanup()
-    window.destroy()
+    W.destroy()
 
-# Create GUI window
-window = tk.Tk()
-window.title("LED Controller")
+W = tk.Tk()
+W.title("Color LEDs")
+W.configure(bg="black")
+W.geometry("250x220")
 
-color_var = tk.StringVar(value="Red")
+B = {}
+for i, color in enumerate(PINS):
+    b = tk.Button(W, text=f"{color} OFF", bg=color.lower(), fg="white", width=18, height=2,
+                  command=lambda c=color: toggle(c))
+    b.pack(pady=5)
+    B[color] = b
 
-# Create radio buttons
-for color in LED_PINS.keys():
-    tk.Radiobutton(window, text=color, variable=color_var, value=color, command=turn_on_led).pack(anchor="w")
+tk.Button(W, text="EXIT", bg="gray", fg="white", width=18, height=2, command=shutdown).pack(pady=10)
 
-# Exit button
-tk.Button(window, text="Exit", command=exit_program).pack(pady=10)
-
-window.mainloop()
+W.mainloop()
